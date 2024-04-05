@@ -1,79 +1,70 @@
-from http import HTTPStatus
-
-import pytest
 from pytest_django.asserts import assertRedirects, assertFormError
 
+from .constants import NEW_COMMENT, FORBIDDEN_TEXT
 from news.forms import WARNING
 from news.models import Comment
 
 
-@pytest.mark.parametrize(
-    'parametrized_client, expected_count',
-    (
-        (pytest.lazy_fixture('client'), 0),
-        (pytest.lazy_fixture('author_client'), 1)
-    )
-)
-@pytest.mark.django_db
-def test_adding_comments(
-    parametrized_client, detail_url, comments_url, form_data,
-    expected_count, news, author
-):
-    response = parametrized_client.post(detail_url, data=form_data)
-    comments_count = Comment.objects.count()
-    assert comments_count == expected_count
-    if comments_count == 1:
-        assertRedirects(response, comments_url)
-        comment = Comment.objects.get()
-        assert comment.text == form_data['text']
-        assert comment.news == news
-        assert comment.author == author
+def test_anonym_cannot_add_comment(detail_url, client):
+    before_test_count = Comment.objects.count()
+    client.post(detail_url, data=NEW_COMMENT)
+    assert Comment.objects.count() == before_test_count
 
 
-def test_user_cannot_add_forbidden_words(
-        author_client, detail_url, forbidden_data
+def test_user_can_add_comment(
+        detail_url, news, author, author_client, comments_url
 ):
-    response = author_client.post(detail_url, data=forbidden_data)
+    before_test_count = Comment.objects.count()
+    response = author_client.post(detail_url, data=NEW_COMMENT)
+    assertRedirects(response, comments_url)
+    assert Comment.objects.count() == before_test_count + 1
+    new_comment = Comment.objects.get(text=NEW_COMMENT['text'])
+    assert new_comment.text == NEW_COMMENT['text']
+    assert new_comment.news == news
+    assert new_comment.author == author
+
+
+def test_user_cannot_add_forbidden_words(author_client, detail_url):
+    before_text_count = Comment.objects.count()
     assertFormError(
-        response, form='form', field='text', errors=WARNING
+        author_client.post(detail_url, data=FORBIDDEN_TEXT),
+        form='form', field='text', errors=WARNING
     )
-    assert Comment.objects.count() == 0
+    assert Comment.objects.count() == before_text_count
 
 
-@pytest.mark.parametrize(
-    'auth_client, expected_status, expected_count',
-    (
-        (pytest.lazy_fixture('reader_client'), HTTPStatus.NOT_FOUND, 1),
-        (pytest.lazy_fixture('author_client'), HTTPStatus.FOUND, 0)
+def test_author_can_delete_comment(delete_url, comments_url, author_client):
+    before_test_count = Comment.objects.count()
+    assertRedirects(
+        author_client.delete(delete_url),
+        comments_url
     )
-)
-@pytest.mark.django_db
-def test_delete_comment_possibility(
-    delete_url, comments_url, auth_client, expected_status, expected_count
+    assert Comment.objects.count() == before_test_count - 1
+
+
+def test_user_cannot_delete_others_comment(delete_url, reader_client):
+    before_test_count = Comment.objects.count()
+    reader_client.delete(delete_url)
+    assert Comment.objects.count() == before_test_count
+
+
+def test_author_can_edit_own_comment(
+        author_client, edit_url, comments_url, author, news
 ):
-    response = auth_client.delete(delete_url)
-    assert response.status_code == expected_status
-    if response.status_code == HTTPStatus.FOUND:
-        assertRedirects(response, comments_url)
-    assert Comment.objects.count() == expected_count
-
-
-@pytest.mark.parametrize(
-    'auth_client, expected_status',
-    (
-        (pytest.lazy_fixture('reader_client'), HTTPStatus.NOT_FOUND),
-        (pytest.lazy_fixture('author_client'), HTTPStatus.FOUND)
+    assertRedirects(
+        author_client.post(edit_url, data=NEW_COMMENT),
+        comments_url
     )
-)
-@pytest.mark.django_db
-def test_edit_comment_possibility(
-    comment, edit_url, comments_url, auth_client, form_data, expected_status
-):
-    response = auth_client.post(edit_url, data=form_data)
-    assert response.status_code == expected_status
-    if response.status_code == HTTPStatus.NOT_FOUND:
-        comment.refresh_from_db()
-        assert comment.text != form_data['text']
-    elif response.status_code == HTTPStatus.FOUND:
-        comment.refresh_from_db()
-        assert comment.text == form_data['text']
+    edited_comment = Comment.objects.get(text=NEW_COMMENT['text'])
+    assert edited_comment.text == NEW_COMMENT['text']
+    assert edited_comment.news == news
+    assert edited_comment.author == author
+
+
+def test_user_cannot_edit_others_comment(reader_client, edit_url, comment):
+    comment_before_test = comment
+    reader_client.post(edit_url, data=NEW_COMMENT)
+    comment.refresh_from_db()
+    assert comment.text == comment_before_test.text
+    assert comment.news == comment_before_test.news
+    assert comment.author == comment_before_test.author

@@ -1,48 +1,39 @@
 from http import HTTPStatus
 
-from django.urls import reverse  # type: ignore
-
 from pytest_django.asserts import assertRedirects
 import pytest
 
+from .constants import (
+    AUTHOR_CLIENT, ANONYM_CLIENT, DELETE_URL, DETAIL_URL,
+    EDIT_URL, HOME_URL, LOGIN_URL, LOGOUT_URL, READER_CLIENT,
+    REDIRECT_LOGIN_DELETE_URL, REDIRECT_LOGIN_EDIT_URL, SIGNUP_URL,
+)
 
-@pytest.mark.django_db
+
 @pytest.mark.parametrize(
-    'name, args',
+    'parametrized_client, url, expected_status',
     (
-        ('news:home', None),
-        ('news:detail', pytest.lazy_fixture('news_id')),
-        ('users:login', None), ('users:logout', None), ('users:signup', None),
+        (ANONYM_CLIENT, HOME_URL, HTTPStatus.OK),
+        (ANONYM_CLIENT, DETAIL_URL, HTTPStatus.OK),
+        (ANONYM_CLIENT, LOGIN_URL, HTTPStatus.OK),
+        (ANONYM_CLIENT, LOGOUT_URL, HTTPStatus.OK),
+        (ANONYM_CLIENT, SIGNUP_URL, HTTPStatus.OK),
+        (AUTHOR_CLIENT, EDIT_URL, HTTPStatus.OK),
+        (AUTHOR_CLIENT, DELETE_URL, HTTPStatus.OK),
+        (READER_CLIENT, EDIT_URL, HTTPStatus.NOT_FOUND),
+        (READER_CLIENT, DELETE_URL, HTTPStatus.NOT_FOUND)
     )
 )
-def test_pages_availability_for_anonymous(client, name, args):
-    response = client.get(reverse(name, args=args))
-    assert response.status_code == HTTPStatus.OK
+def test_pages_availability(parametrized_client, url, expected_status):
+    assert parametrized_client.get(url).status_code == expected_status
 
 
 @pytest.mark.parametrize(
-    'auth_client, expected_status',
+    'url, expected_redirect',
     (
-        (pytest.lazy_fixture('author_client'), HTTPStatus.OK),
-        (pytest.lazy_fixture('reader_client'), HTTPStatus.NOT_FOUND)
+        (EDIT_URL, REDIRECT_LOGIN_EDIT_URL),
+        (DELETE_URL, REDIRECT_LOGIN_DELETE_URL)
     )
 )
-@pytest.mark.parametrize(
-    'url',
-    (pytest.lazy_fixture('edit_url'), pytest.lazy_fixture('delete_url'))
-)
-@pytest.mark.django_db
-def test_edit_delete_pages_availability(url, auth_client, expected_status):
-    response = auth_client.get(url)
-    assert response.status_code == expected_status
-
-
-@pytest.mark.parametrize(
-    'url',
-    (pytest.lazy_fixture('edit_url'), pytest.lazy_fixture('delete_url'))
-)
-@pytest.mark.django_db
-def test_redirect_for_anonymous(client, url):
-    response = client.get(url)
-    expected_url = reverse('users:login') + f'?next={url}'
-    assertRedirects(response, expected_url)
+def test_redirects_for_anonym(client, url, expected_redirect):
+    assertRedirects(client.get(url), expected_redirect)

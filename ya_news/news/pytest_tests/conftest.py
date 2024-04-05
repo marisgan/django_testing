@@ -1,13 +1,11 @@
 from datetime import datetime, timedelta
 
-from django.conf import settings  # type: ignore
-from django.test.client import Client  # type: ignore
-from django.urls import reverse  # type: ignore
-from django.utils import timezone  # type: ignore
-
+from django.conf import settings
+from django.test.client import Client
+from django.urls import reverse
+from django.utils import timezone
 import pytest
 
-from news.forms import BAD_WORDS
 from news.models import News, Comment
 
 
@@ -37,73 +35,50 @@ def reader_client(reader):
 
 @pytest.fixture
 def news():
-    news = News.objects.create(title='Some Title', text='Some text')
-    return news
-
-
-@pytest.fixture
-def news_id(news):
-    return (news.id,)
+    return News.objects.create(title='Some Title', text='Some text')
 
 
 @pytest.fixture
 def news_feed():
-    news_feed = News.objects.bulk_create(
+    return News.objects.bulk_create(
         News(
             title=f'News {index}', text='More text',
             date=datetime.today() - timedelta(days=index)
         )
         for index in range(settings.NEWS_COUNT_ON_HOME_PAGE + 1)
     )
-    return news_feed
 
 
 @pytest.fixture
 def comment(news, author):
-    comment = Comment.objects.create(
-        news=news, author=author, text='Comment text'
+    return Comment.objects.create(news=news, author=author, text='Text')
+
+
+@pytest.fixture
+def comment_feed(news, author):
+    comment_feed = Comment.objects.bulk_create(
+        Comment(news=news, author=author, text=f'Text {index}')
+        for index in range(22)
     )
-    return comment
+    for index in range(22):
+        comment_feed[index].created = timezone.now() - timedelta(days=index)
+        comment_feed[index].save()
+    return comment_feed
 
 
 @pytest.fixture
-def comment2(news, author):
-    comment2 = Comment.objects.create(
-        news=news, author=author, text='Other text'
-    )
-    comment2.created = timezone.now() - timedelta(days=2)
-    comment2.save
-    return comment2
+def delete_url(comment):
+    return reverse('news:delete', args=(comment.id,))
 
 
 @pytest.fixture
-def comment_id(comment):
-    return (comment.id,)
+def edit_url(comment):
+    return reverse('news:edit', args=(comment.id,))
 
 
 @pytest.fixture
-def form_data():
-    return {'text': 'New text'}
-
-
-@pytest.fixture
-def forbidden_data():
-    return {'text': f'Text {BAD_WORDS[0]}'}
-
-
-@pytest.fixture
-def delete_url(comment_id):
-    return reverse('news:delete', args=comment_id)
-
-
-@pytest.fixture
-def edit_url(comment_id):
-    return reverse('news:edit', args=comment_id)
-
-
-@pytest.fixture
-def detail_url(news_id):
-    return reverse('news:detail', args=news_id)
+def detail_url(news):
+    return reverse('news:detail', args=(news.id,))
 
 
 @pytest.fixture
@@ -114,3 +89,35 @@ def comments_url(detail_url):
 @pytest.fixture
 def home_url():
     return reverse('news:home')
+
+
+@pytest.fixture
+def login_url():
+    return reverse('users:login')
+
+
+@pytest.fixture
+def redirect_login_edit_url(login_url, edit_url):
+    return login_url + f'?next={edit_url}'
+
+
+@pytest.fixture
+def redirect_login_delete_url(login_url, delete_url):
+    return login_url + f'?next={delete_url}'
+
+
+@pytest.fixture
+def logout_url():
+    return reverse('users:logout')
+
+
+@pytest.fixture
+def signup_url():
+    return reverse('users:signup')
+
+
+@pytest.fixture(autouse=True)
+def enable_db_access_for_all_tests(
+    db,  # noqa
+):
+    pass
