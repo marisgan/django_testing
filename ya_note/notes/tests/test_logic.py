@@ -1,13 +1,12 @@
-from http import HTTPStatus
-
 from pytils.translit import slugify
 
 from .fixture_constants import (
     ADD_URL, BaseSetup, DELETE_URL, DELETE_URL, EDIT_URL,
-    FORM_DATA, NOTE_SLUG, SUCCESS_URL,
+    FORM_DATA, SUCCESS_URL,
 )
 from notes.forms import WARNING
 from notes.models import Note
+
 
 class TestLogic(BaseSetup):
 
@@ -53,7 +52,7 @@ class TestLogic(BaseSetup):
             self.author_client.post(ADD_URL, data=data_slug_dublicate),
             form='form',
             field='slug',
-            errors=f'{self.note.slug}{WARNING}'
+            errors=data_slug_dublicate['slug'] + WARNING
         )
         self.assertEqual(list(Note.objects.all()), notes_before)
 
