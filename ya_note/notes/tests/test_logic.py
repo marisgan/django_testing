@@ -53,7 +53,7 @@ class TestLogic(BaseSetup):
             self.author_client.post(ADD_URL, data=data_slug_dublicate),
             form='form',
             field='slug',
-            errors=f'{data_slug_dublicate['slug']}{WARNING}'
+            errors=f'{data_slug_dublicate.get('slug')}{WARNING}'
         )
         self.assertEqual(list(Note.objects.all()), notes_before)
 
