@@ -17,7 +17,7 @@ def test_news_order(client, news_feed, home_url):
     assert all_dates == sorted(all_dates, reverse=True)
 
 
-def test_comments_order(client, comment_feed, detail_url):
+def test_comments_order(client, comments, detail_url):
     response = client.get(detail_url)
     assert 'news' in response.context
     timestamps = [
@@ -33,6 +33,6 @@ def test_form_availability_for_anonym(client, detail_url):
 
 def test_form_availability_for_user(reader_client, detail_url):
     assert isinstance(
-        reader_client.get(detail_url).context.get('form', None),
+        reader_client.get(detail_url).context.get('form'),
         CommentForm
     )

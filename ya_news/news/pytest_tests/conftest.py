@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 import pytest
 
+from .constants import COMMENTS_NUM
 from news.models import News, Comment
 
 
@@ -40,7 +41,7 @@ def news():
 
 @pytest.fixture
 def news_feed():
-    return News.objects.bulk_create(
+    News.objects.bulk_create(
         News(
             title=f'News {index}', text='More text',
             date=datetime.today() - timedelta(days=index)
@@ -55,15 +56,13 @@ def comment(news, author):
 
 
 @pytest.fixture
-def comment_feed(news, author):
-    comment_feed = Comment.objects.bulk_create(
-        Comment(news=news, author=author, text=f'Text {index}')
-        for index in range(22)
-    )
-    for index in range(22):
-        comment_feed[index].created = timezone.now() - timedelta(days=index)
-        comment_feed[index].save()
-    return comment_feed
+def comments(news, author):
+    for index in range(COMMENTS_NUM):
+        comment = Comment.objects.create(
+            news=news, author=author, text=f'Text {index}'
+        )
+        comment.created = timezone.now() - timedelta(hours=index)
+        comment.save
 
 
 @pytest.fixture

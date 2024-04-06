@@ -1,6 +1,6 @@
 from http import HTTPStatus
 
-from .settings import (
+from .fixture_constants import (
     ADD_URL, BaseSetup, DELETE_URL, DETAIL_URL, DELETE_URL, EDIT_URL,
     HOME_URL, LIST_URL, LOGIN_URL, LOGOUT_URL,
     SUCCESS_URL, SIGNUP_URL,
@@ -30,13 +30,21 @@ class TestRoutes(BaseSetup):
             with self.subTest(client=client, url=url):
                 self.assertEqual(client.get(url).status_code, expected_status)
 
+    def make_redirect_url(self, url):
+        return f'{LOGIN_URL}?next={url}'
+
     def test_redirects_for_anonym(self):
         """Редирект анонима на страницу логина"""
-        for url in (
-            LIST_URL, SUCCESS_URL, ADD_URL, DETAIL_URL, EDIT_URL, DELETE_URL
+        for url, expected_redirect in (
+            (LIST_URL, self.make_redirect_url(LIST_URL)),
+            (SUCCESS_URL, self.make_redirect_url(SUCCESS_URL)),
+            (ADD_URL, self.make_redirect_url(ADD_URL)),
+            (DETAIL_URL, self.make_redirect_url(DETAIL_URL)),
+            (EDIT_URL, self.make_redirect_url(EDIT_URL)),
+            (DELETE_URL, self.make_redirect_url(DELETE_URL)),
         ):
             with self.subTest(url=url):
                 self.assertRedirects(
                     self.client.get(url),
-                    f'{LOGIN_URL}?next={url}'
+                    expected_redirect
                 )

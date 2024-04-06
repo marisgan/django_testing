@@ -1,6 +1,6 @@
 from notes.forms import NoteForm
 
-from .settings import (
+from .fixture_constants import (
     ADD_URL, BaseSetup, EDIT_URL, LIST_URL,
 )
 
@@ -9,11 +9,13 @@ class TestContent(BaseSetup):
 
     def test_own_note_on_list_page(self):
         """Своя заметка передается на страницу списка заметок"""
-        note_on_page = self.author_client.get(
-            LIST_URL).context['object_list'].get(id=self.note.id)
-        self.assertEqual(note_on_page.title, self.note.title)
-        self.assertEqual(note_on_page.text, self.note.text)
-        self.assertEqual(note_on_page.slug, self.note.slug)
+        response = self.author_client.get(LIST_URL)
+        self.assertIn(self.note, response.context['object_list'])
+        note = response.context['object_list'].get(id=self.note.id)
+        self.assertEqual(note.title, self.note.title)
+        self.assertEqual(note.text, self.note.text)
+        self.assertEqual(note.slug, self.note.slug)
+        self.assertEqual(note.author, self.note.author)
 
     def test_others_note_not_on_list_page(self):
         """Чужая заметка не попадает на страницу списка заметок"""
