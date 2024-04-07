@@ -1,13 +1,13 @@
 from http import HTTPStatus
 
 from .fixture_constants import (
-    ADD_URL, BaseSetup, DELETE_URL, DETAIL_URL, DELETE_URL, EDIT_URL,
+    ADD_URL, Fixture, DELETE_URL, DETAIL_URL, DELETE_URL, EDIT_URL,
     HOME_URL, LIST_URL, LOGIN_URL, LOGOUT_URL,
     SUCCESS_URL, SIGNUP_URL,
 )
 
 
-class TestRoutes(BaseSetup):
+class TestRoutes(Fixture):
 
     def test_pages_availability(self):
         """Доступ к страницам для анонима и пользователя"""
@@ -25,6 +25,9 @@ class TestRoutes(BaseSetup):
             (self.author_client, DETAIL_URL, HTTPStatus.OK),
             (self.author_client, EDIT_URL, HTTPStatus.OK),
             (self.author_client, DELETE_URL, HTTPStatus.OK),
+            (self.author_client, LIST_URL, HTTPStatus.OK),
+            (self.author_client, ADD_URL, HTTPStatus.OK),
+            (self.author_client, SUCCESS_URL, HTTPStatus.OK),
 
         ):
             with self.subTest(client=client, url=url):

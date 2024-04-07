@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
+
 from notes.models import Note
 
 User = get_user_model()
@@ -21,7 +22,7 @@ DELETE_URL = reverse('notes:delete', args=(NOTE_SLUG,))
 FORM_DATA = {'title': 'New Title', 'text': 'New text', 'slug': 'new_slug'}
 
 
-class BaseSetup(TestCase):
+class Fixture(TestCase):
 
     @classmethod
     def setUpTestData(cls):

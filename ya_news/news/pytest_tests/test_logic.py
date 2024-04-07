@@ -1,88 +1,86 @@
 import pytest
 from pytest_django.asserts import assertRedirects, assertFormError
 
-from .constants import NEW_COMMENT, FORBIDDEN_TEXTS
+from .constants import NEW_COMMENT, FORBIDDEN_FORM_DATAS
 from news.forms import WARNING
 from news.models import Comment
 
 
 def test_anonym_cannot_add_comment(detail_url, client):
-    comments_before = list(Comment.objects.all())
+    comments = set(Comment.objects.all())
     client.post(detail_url, data=NEW_COMMENT)
-    assert list(Comment.objects.all()) == comments_before
+    assert set(Comment.objects.all()) == comments
 
 
 def test_user_can_add_comment(
         detail_url, news, author, author_client, comments_url
 ):
-    comments_before = set(Comment.objects.all())
-    response = author_client.post(detail_url, data=NEW_COMMENT)
-    assertRedirects(response, comments_url)
-    comments_after = set(Comment.objects.all())
-    new_comments = comments_after.difference(comments_before)
-    assert len(new_comments) == 1
-    new_comment = new_comments.pop()
-    assert new_comment.text == NEW_COMMENT['text']
-    assert new_comment.news == news
-    assert new_comment.author == author
+    comments = set(Comment.objects.all())
+    assertRedirects(
+        author_client.post(detail_url, data=NEW_COMMENT),
+        comments_url
+    )
+    comments = set(Comment.objects.all()) - comments
+    assert len(comments) == 1
+    comment = comments.pop()
+    assert comment.text == NEW_COMMENT['text']
+    assert comment.news == news
+    assert comment.author == author
 
 
 @pytest.mark.parametrize(
-    'forbidden_text',
-    FORBIDDEN_TEXTS
+    'forbidden_form_data',
+    FORBIDDEN_FORM_DATAS
 )
 def test_user_cannot_add_forbidden_words(
-    author_client, detail_url, forbidden_text
+    author_client, detail_url, forbidden_form_data
 ):
-    comments_before = list(Comment.objects.all())
+    comments = set(Comment.objects.all())
     assertFormError(
-        author_client.post(detail_url, data=forbidden_text),
+        author_client.post(detail_url, data=forbidden_form_data),
         form='form', field='text', errors=WARNING
     )
-    assert list(Comment.objects.all()) == comments_before
+    assert set(Comment.objects.all()) == comments
 
 
 def test_author_can_delete_comment(
         delete_url, comments_url, author_client, comment
 ):
-    comments_before = set(Comment.objects.all())
+    comments_count = Comment.objects.count()
     assertRedirects(
         author_client.delete(delete_url),
         comments_url
     )
-    comments_after = set(Comment.objects.all())
-    deleted_comments = comments_before.difference(comments_after)
-    assert len(deleted_comments) == 1
-    deleted_comment = deleted_comments.pop()
-    assert deleted_comment.text == comment.text
-    assert deleted_comment.author == comment.author
-    assert deleted_comment.news == comment.news
+    assert Comment.objects.count() == comments_count - 1
+    assert not Comment.objects.filter(id=comment.id).exists()
 
 
-def test_user_cannot_delete_others_comment(delete_url, reader_client):
-    comments_before = list(Comment.objects.all())
+def test_user_cannot_delete_others_comment(delete_url, reader_client, comment):
+    comments = set(Comment.objects.all())
     reader_client.delete(delete_url)
-    assert list(Comment.objects.all()) == comments_before
+    assert set(Comment.objects.all()) == comments
+    not_deleted_comment = Comment.objects.get(id=comment.id)
+    assert not_deleted_comment.text == comment.text
+    assert not_deleted_comment.news == comment.news
+    assert not_deleted_comment.author == comment.author
 
 
 def test_author_can_edit_own_comment(
         author_client, edit_url, comments_url, comment
 ):
-    original_comment = comment
     assertRedirects(
         author_client.post(edit_url, data=NEW_COMMENT),
         comments_url
     )
-    edited_comment = Comment.objects.get(id=original_comment.id)
+    edited_comment = Comment.objects.get(id=comment.id)
     assert edited_comment.text == NEW_COMMENT['text']
-    assert edited_comment.news == original_comment.news
-    assert edited_comment.author == original_comment.author
+    assert edited_comment.news == comment.news
+    assert edited_comment.author == comment.author
 
 
 def test_user_cannot_edit_others_comment(reader_client, edit_url, comment):
-    original_comment = comment
     reader_client.post(edit_url, data=NEW_COMMENT)
-    edited_comment = Comment.objects.get(id=original_comment.id)
-    assert edited_comment.text == original_comment.text
-    assert edited_comment.news == original_comment.news
-    assert edited_comment.author == original_comment.author
+    edited_comment = Comment.objects.get(id=comment.id)
+    assert edited_comment.text == comment.text
+    assert edited_comment.news == comment.news
+    assert edited_comment.author == comment.author

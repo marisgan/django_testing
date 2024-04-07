@@ -62,7 +62,7 @@ def comments(news, author):
             news=news, author=author, text=f'Text {index}'
         )
         comment.created = timezone.now() - timedelta(hours=index)
-        comment.save
+        comment.save()
 
 
 @pytest.fixture
@@ -97,12 +97,12 @@ def login_url():
 
 @pytest.fixture
 def redirect_login_edit_url(login_url, edit_url):
-    return login_url + f'?next={edit_url}'
+    return f'{login_url}?next={edit_url}'
 
 
 @pytest.fixture
 def redirect_login_delete_url(login_url, delete_url):
-    return login_url + f'?next={delete_url}'
+    return f'{login_url}?next={delete_url}'
 
 
 @pytest.fixture

@@ -17,4 +17,4 @@ REDIRECT_LOGIN_EDIT_URL = pytest.lazy_fixture('redirect_login_edit_url')
 
 NEW_COMMENT = {'text': 'New comment text'}
 COMMENTS_NUM = 22
-FORBIDDEN_TEXTS = [{'text': f'Text {bad_word}'} for bad_word in BAD_WORDS]
+FORBIDDEN_FORM_DATAS = [{'text': f'Text {bad_word}'} for bad_word in BAD_WORDS]
