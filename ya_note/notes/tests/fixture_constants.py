@@ -22,7 +22,7 @@ DELETE_URL = reverse('notes:delete', args=(NOTE_SLUG,))
 FORM_DATA = {'title': 'New Title', 'text': 'New text', 'slug': 'new_slug'}
 
 
-class Fixture(TestCase):
+class BaseFixtures(TestCase):
 
     @classmethod
     def setUpTestData(cls):

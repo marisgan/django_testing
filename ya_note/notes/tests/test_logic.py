@@ -1,14 +1,14 @@
 from pytils.translit import slugify
 
 from .fixture_constants import (
-    ADD_URL, Fixture, DELETE_URL, DELETE_URL, EDIT_URL,
+    ADD_URL, BaseFixtures, DELETE_URL, DELETE_URL, EDIT_URL,
     FORM_DATA, SUCCESS_URL,
 )
 from notes.forms import WARNING
 from notes.models import Note
 
 
-class TestLogic(Fixture):
+class TestLogic(BaseFixtures):
 
     def test_anonym_cannot_add_note(self):
         """Аноним не может создать заметку"""
@@ -61,7 +61,7 @@ class TestLogic(Fixture):
             SUCCESS_URL
         )
         self.assertEqual(Note.objects.count(), notes_count - 1)
-        self.assertNotIn(self.note, Note.objects.all())
+        self.assertEqual(Note.objects.filter(id=self.note.id).exists(), False)
 
     def test_user_cannot_delete_others_note(self):
         """Юзер не может удалить чужую заметку"""

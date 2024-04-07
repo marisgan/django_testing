@@ -1,13 +1,13 @@
 from http import HTTPStatus
 
 from .fixture_constants import (
-    ADD_URL, Fixture, DELETE_URL, DETAIL_URL, DELETE_URL, EDIT_URL,
+    ADD_URL, BaseFixtures, DELETE_URL, DETAIL_URL, DELETE_URL, EDIT_URL,
     HOME_URL, LIST_URL, LOGIN_URL, LOGOUT_URL,
     SUCCESS_URL, SIGNUP_URL,
 )
 
 
-class TestRoutes(Fixture):
+class TestRoutes(BaseFixtures):
 
     def test_pages_availability(self):
         """Доступ к страницам для анонима и пользователя"""

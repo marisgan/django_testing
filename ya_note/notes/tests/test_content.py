@@ -1,18 +1,17 @@
 from notes.forms import NoteForm
 
 from .fixture_constants import (
-    ADD_URL, Fixture, EDIT_URL, LIST_URL,
+    ADD_URL, BaseFixtures, EDIT_URL, LIST_URL,
 )
 
 
-class TestContent(Fixture):
+class TestContent(BaseFixtures):
 
     def test_own_note_on_list_page(self):
         """Своя заметка передается на страницу списка заметок"""
-        response = self.author_client.get(LIST_URL)
-        object_list = response.context['object_list']
-        self.assertIn(self.note, object_list)
-        note = object_list.get(id=self.note.id)
+        notes = self.author_client.get(LIST_URL).context['object_list']
+        self.assertIn(self.note, notes)
+        note = notes.get(id=self.note.id)
         self.assertEqual(note.title, self.note.title)
         self.assertEqual(note.text, self.note.text)
         self.assertEqual(note.slug, self.note.slug)
