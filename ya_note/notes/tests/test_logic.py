@@ -61,7 +61,7 @@ class TestLogic(BaseFixtures):
             SUCCESS_URL
         )
         self.assertEqual(Note.objects.count(), notes_count - 1)
-        self.assertEqual(Note.objects.filter(id=self.note.id).exists(), False)
+        self.assertFalse(Note.objects.filter(id=self.note.id).exists())
 
     def test_user_cannot_delete_others_note(self):
         """Юзер не может удалить чужую заметку"""
